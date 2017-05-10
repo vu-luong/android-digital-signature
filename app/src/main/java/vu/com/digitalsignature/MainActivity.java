@@ -11,6 +11,7 @@ import android.security.KeyChainException;
 import android.security.keystore.KeyProperties;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Rectangle;
@@ -56,7 +57,10 @@ public class MainActivity extends AppCompatActivity {
                     public void alias(String alias) {
                         // Credential alias selected.  Remember the alias selection for future use.
                         if (alias != null) {
+//                            Toast.makeText(getApplicationContext(), "ALDBLASJDLN", Toast.LENGTH_LONG);
+                            Log.d("MAIN: ", "bat dau ki");
                             sign(alias);
+
                         }
                     }
                 },
@@ -70,7 +74,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void sign(final String alias) {
         new AsyncTask<Void, Void, Void>() {
-            @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                super.onPostExecute(aVoid);
+                Toast.makeText(getApplicationContext(), "xong", Toast.LENGTH_SHORT);
+            }
+
             @Override
             protected Void doInBackground(Void... params) {
 //                RSAPrivateKey
@@ -79,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
 
                     privateKey =  KeyChain.getPrivateKey(getApplicationContext(), alias);
                     Log.d("MAIN: ", privateKey.getClass().getName());
+                    Log.d("Main: algo: ", privateKey.getAlgorithm());
 
 
                     final Signature signature = Signature.getInstance("SHA256withRSA");
@@ -98,8 +108,8 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public byte[] sign(byte[] bytes) throws GeneralSecurityException {
-                            MessageDigest messageDigest = MessageDigest.getInstance(getHashAlgorithm());
-                            byte hash[] = messageDigest.digest(bytes);
+//                            MessageDigest messageDigest = MessageDigest.getInstance(getHashAlgorithm());
+//                            byte hash[] = messageDigest.digest(bytes);
 
                             try {
                                 signature.update(bytes);
@@ -110,12 +120,15 @@ public class MainActivity extends AppCompatActivity {
                         }
                     };
 
+
                     Certificate[] chain = KeyChain.getCertificateChain(getApplicationContext(), alias);
 
 //                    X509Certificate[] chain = KeyChain.getCertificateChain(getApplicationContext(), alias);
 
                     BouncyCastleProvider provider = new BouncyCastleProvider();
                     Security.addProvider(provider);
+
+//                    ExternalSignature pks = new PrivateKeySignature(privateKey, DigestAlgorithms.SHA256, provider.getName());
 
                     File tmp = File.createTempFile("eid", ".pdf", getCacheDir());
                     File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "sign_test.pdf");

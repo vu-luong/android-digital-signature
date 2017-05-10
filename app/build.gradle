@@ -25,11 +25,19 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     compile 'com.android.support:appcompat-v7:23.4.0'
-    compile 'com.itextpdf:itextg:5.5.9'
+    // https://mvnrepository.com/artifact/com.itextpdf/itextg
+    compile group: 'com.itextpdf', name: 'itextg', version: '5.5.10'
+
+    // https://mvnrepository.com/artifact/com.madgag/scprov-jdk15on
+    compile group: 'com.madgag', name: 'scprov-jdk15on', version: '1.47.0.2'
+
+    // https://mvnrepository.com/artifact/com.madgag/scpkix-jdk15on
+    compile group: 'com.madgag', name: 'scpkix-jdk15on', version: '1.47.0.2'
+
+
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    testCompile 'org.bouncycastle:bcprov-jdk15on:1.49'
-    testCompile 'org.bouncycastle:bcpkix-jdk15on:1.49'
-    compile 'com.madgag.spongycastle:prov:1.51.0.0'
-    compile 'com.madgag.spongycastle:pkix:1.51.0.0'
-    testCompile 'junit:junit:4.12'
+
+    // https://mvnrepository.com/artifact/junit/junit
+    compile group: 'junit', name: 'junit', version: '4.12'
+
 }
