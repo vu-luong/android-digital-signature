@@ -33,6 +33,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.Security;
@@ -95,30 +96,30 @@ public class MainActivity extends AppCompatActivity {
                     signature.initSign(privateKey);
                     Log.d("MAIN: ", privateKey.toString());
 
-                    ExternalSignature pks = new ExternalSignature() {
-                        @Override
-                        public String getHashAlgorithm() {
-                            return "SHA256";
-                        }
-
-                        @Override
-                        public String getEncryptionAlgorithm() {
-                            return "RSA";
-                        }
-
-                        @Override
-                        public byte[] sign(byte[] bytes) throws GeneralSecurityException {
-//                            MessageDigest messageDigest = MessageDigest.getInstance(getHashAlgorithm());
-//                            byte hash[] = messageDigest.digest(bytes);
-
-                            try {
-                                signature.update(bytes);
-                                return signature.sign();
-                            } catch (Exception e) {
-                                throw new GeneralSecurityException(e);
-                            }
-                        }
-                    };
+//                    ExternalSignature pks = new ExternalSignature() {
+//                        @Override
+//                        public String getHashAlgorithm() {
+//                            return "SHA256";
+//                        }
+//
+//                        @Override
+//                        public String getEncryptionAlgorithm() {
+//                            return "RSA";
+//                        }
+//
+//                        @Override
+//                        public byte[] sign(byte[] bytes) throws GeneralSecurityException {
+////                            MessageDigest messageDigest = MessageDigest.getInstance(getHashAlgorithm());
+////                            byte hash[] = messageDigest.digest(bytes);
+//
+//                            try {
+//                                signature.update(bytes);
+//                                return signature.sign();
+//                            } catch (Exception e) {
+//                                throw new GeneralSecurityException(e);
+//                            }
+//                        }
+//                    };
 
 
                     Certificate[] chain = KeyChain.getCertificateChain(getApplicationContext(), alias);
@@ -128,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
                     BouncyCastleProvider provider = new BouncyCastleProvider();
                     Security.addProvider(provider);
 
-//                    ExternalSignature pks = new PrivateKeySignature(privateKey, DigestAlgorithms.SHA256, provider.getName());
+                    ExternalSignature pks = new PrivateKeySignature(privateKey, DigestAlgorithms.SHA256, provider.getName());
 
                     File tmp = File.createTempFile("eid", ".pdf", getCacheDir());
                     File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "sign_test.pdf");
