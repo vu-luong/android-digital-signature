@@ -10,6 +10,8 @@ import java.security.Signature;
 
 /**
  * Created by AnhVu on 5/10/17.
+ *
+ * Custom the PrivateKeySignature class of Itext to adapt with Android environment.
  */
 
 public class CustomPrivateKeySignature  implements ExternalSignature {
@@ -40,11 +42,6 @@ public class CustomPrivateKeySignature  implements ExternalSignature {
     public byte[] sign(byte[] b) throws GeneralSecurityException {
         String signMode = this.hashAlgorithm + "with" + this.encryptionAlgorithm;
         Signature sig;
-//        if(this.provider == null) {
-//            sig = Signature.getInstance(signMode);
-//        } else {
-//            sig = Signature.getInstance(signMode, this.provider);
-//        }
         sig = Signature.getInstance("SHA256withRSA");
 
         sig.initSign(this.pk);

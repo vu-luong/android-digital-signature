@@ -31,6 +31,9 @@ import java.util.Iterator;
 
 /**
  * Created by AnhVu on 5/10/17.
+ *
+ * Custom MakeSignature class of Itext to adapt with Android environment
+ *
  */
 
 public class CustomMakeSignature extends MakeSignature {
