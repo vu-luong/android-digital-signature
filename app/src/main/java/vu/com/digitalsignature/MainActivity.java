@@ -2,20 +2,28 @@ package vu.com.digitalsignature;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.OpenableColumns;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
-import android.security.keystore.KeyInfo;
-import android.security.keystore.KeyProperties;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.itextpdf.text.DocumentException;
@@ -28,9 +36,7 @@ import com.itextpdf.text.pdf.security.BouncyCastleDigest;
 import com.itextpdf.text.pdf.security.DigestAlgorithms;
 import com.itextpdf.text.pdf.security.ExternalDigest;
 import com.itextpdf.text.pdf.security.ExternalSignature;
-import com.itextpdf.text.pdf.security.MakeSignature;
 import com.itextpdf.text.pdf.security.MakeSignature.CryptoStandard;
-import com.itextpdf.text.pdf.security.PrivateKeySignature;
 import com.simplify.ink.InkView;
 
 import org.spongycastle.jce.provider.BouncyCastleProvider;
@@ -41,60 +47,170 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
-import java.security.KeyStore;
-import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.Security;
-import java.security.Signature;
 import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.KeySpec;
-
-import static android.R.attr.button;
-import static android.R.attr.key;
-import static android.R.attr.value;
 
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int OPEN_REQUEST_CODE = 123;
 
+    /** Panel for physic signature. */
     private InkView ink;
+
+    /** TextView that display file name. */
+    private TextView mFileNameTextView;
+
+    /** Uri returned after browsing file PDF*/
+    private Uri mFileUri;
+
+    /**  Button to view PDF file */
+    private ImageView mViewPDFImageView;
+
+    /**  Reason of signature */
+    private EditText mReasonEditText;
+
+    /** Location of sigature */
+    private EditText mLocationEditText;
+
+    /** progress dialog that pop up while signing */
+    private ProgressDialog mProgressDialog;
+
+    /** Button to sign PDF file */
+    private Button mSignButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ink = (InkView) findViewById(R.id.ink);
-        Button bt = (Button) findViewById(R.id.button);
+        initView();
+
+
         final Activity a = this;
 
-        bt.setOnClickListener(new View.OnClickListener() {
+        /** Button to clean ink panel */
+        findViewById(R.id.iv_clean).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                ink.clear();
+            }
+        });
+
+        /** perform `view pdf` action */
+        mViewPDFImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mFileUri != null) {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setData(mFileUri);
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(getApplicationContext(), "No PDF File!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+        });
+
+
+        /** perform `browse file` action */
+        findViewById(R.id.iv_browse_file).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("application/pdf");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                startActivityForResult(intent, OPEN_REQUEST_CODE);
+            }
+        });
+
+        /** perform `sign pdf` action */
+        mSignButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mFileUri == null) {
+                    Toast.makeText(getApplicationContext(), "Please choose a pdf file!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 saveImage();
-
-
                 KeyChain.choosePrivateKeyAlias(a,
                         new KeyChainAliasCallback() {
-
                             public void alias(String alias) {
                                 // Credential alias selected.  Remember the alias selection for future use.
                                 if (alias != null) {
-//                            Toast.makeText(getApplicationContext(), "ALDBLASJDLN", Toast.LENGTH_LONG);
-                                    Log.d("MAIN: ", "bat dau ki");
-                                    sign(alias);
-
+                                    Handler h = new Handler(Looper.getMainLooper());
+                                    h.post(new Runnable() {
+                                        public void run() {
+                                            showProgressDialog();
+                                        }
+                                    });
+                                    sign(alias, mReasonEditText.getText().toString(), mLocationEditText.getText().toString());
                                 }
                             }
                         }, null, null, null, -1, null);
             }
         });
-
-
     }
 
+    private void initView() {
+        ink = (InkView) findViewById(R.id.ink);
+        mSignButton = (Button) findViewById(R.id.button_sign);
+        mFileNameTextView = (TextView) findViewById(R.id.tv_file_name);
+        mViewPDFImageView = (ImageView) findViewById(R.id.iv_view);
+        mReasonEditText = (EditText) findViewById(R.id.et_reason);
+        mLocationEditText = (EditText) findViewById(R.id.et_location);
+        mProgressDialog = new ProgressDialog(this);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case OPEN_REQUEST_CODE:
+                if (resultCode == Activity.RESULT_OK) {
+                    mFileUri = data.getData();
+
+                    mFileNameTextView.setText(getFileName(mFileUri));
+                } else {
+                    Toast.makeText(this, "File action canceled", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            default:
+                super.onActivityResult(requestCode, resultCode, data);
+                break;
+        }
+    }
+
+    /**
+     * Get actual file name from uri
+     * @param uri
+     * @return actual file name
+     */
+    public String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * save ink signature to internal storage
+     */
     private void saveImage() {
         FileOutputStream out = null;
         try {
@@ -114,19 +230,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void sign(final String alias) {
+    /**
+     * Sign PDF.
+     * @param alias to get privateKey
+     * @param reason
+     * @param location
+     */
+    private void sign(final String alias, final String reason, final String location) {
+
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected void onPostExecute(Void aVoid) {
                 super.onPostExecute(aVoid);
-                Toast.makeText(getApplicationContext(), "xong", Toast.LENGTH_SHORT);
-                Log.d("MAIN: ", "XONOAXNOANSOFIAOSIDJ");
+                mProgressDialog.dismiss();
+                Intent i = new Intent(getApplicationContext(), DoneActivity.class);
+
+                String f = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/sign_" + getFileName(mFileUri);
+
+                i.putExtra("uri", f);
+                startActivity(i);
+//                Log.d("MAIN: ", "XONOAXNOANSOFIAOSIDJ");
             }
 
             @TargetApi(Build.VERSION_CODES.M)
             @Override
             protected Void doInBackground(Void... params) {
-//                RSAPrivateKey
                 PrivateKey privateKey = null;
                 try {
 
@@ -137,43 +265,7 @@ public class MainActivity extends AppCompatActivity {
                             KeyFactory.getInstance(privateKey.getAlgorithm(), "AndroidKeyStore");
 
 
-                    Log.d("MAIN: ", privateKey.getClass().getName());
-                    Log.d("Main: algo: ", privateKey.getAlgorithm());
-
-
-//                    final Signature signature = Signature.getInstance("SHA256withRSA");
-//                    signature.initSign(privateKey);
-//                    Log.d("MAIN: ", privateKey.toString());
-
-//                    ExternalSignature pks = new ExternalSignature() {
-//                        @Override
-//                        public String getHashAlgorithm() {
-//                            return "SHA256";
-//                        }
-//
-//                        @Override
-//                        public String getEncryptionAlgorithm() {
-//                            return "RSA";
-//                        }
-//
-//                        @Override
-//                        public byte[] sign(byte[] bytes) throws GeneralSecurityException {
-////                            MessageDigest messageDigest = MessageDigest.getInstance(getHashAlgorithm());
-////                            byte hash[] = messageDigest.digest(bytes);
-//
-//                            try {
-//                                signature.update(bytes);
-//                                return signature.sign();
-//                            } catch (Exception e) {
-//                                throw new GeneralSecurityException(e);
-//                            }
-//                        }
-//                    };
-
-
                     Certificate[] chain = KeyChain.getCertificateChain(getApplicationContext(), alias);
-
-//                    X509Certificate[] chain = KeyChain.getCertificateChain(getApplicationContext(), alias);
 
                     BouncyCastleProvider provider = new BouncyCastleProvider();
                     Security.addProvider(provider);
@@ -181,17 +273,10 @@ public class MainActivity extends AppCompatActivity {
                     ExternalSignature pks = new CustomPrivateKeySignature(privateKey, DigestAlgorithms.SHA256, provider.getName());
 
                     File tmp = File.createTempFile("eid", ".pdf", getCacheDir());
-                    File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "sign_test.pdf");
+                    File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "sign_" + getFileName(mFileUri));
                     FileOutputStream fos = new FileOutputStream(file);
 
-                    String src = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString() + "/nhom1.pdf";
-
-//                    sign(src, fos, chain, privateKey, DigestAlgorithms.SHA256, provider.getName(), CryptoStandard.CMS, "Test 1", "Ghent");
-//                    sign(src, fos, chain, privateKey, DigestAlgorithms.SHA512, provider.getName(), CryptoStandard.CMS, "Test 2", "Ghent");
-                    sign(src, fos, chain, pks, DigestAlgorithms.SHA256, provider.getName(), CryptoStandard.CADES, "Test 3", "Ghent");
-//                    sign(src, fos, chain, privateKey, DigestAlgorithms.RIPEMD160, provider.getName(), CryptoStandard.CADES, "Test 4", "Ghent");
-
-//                    MakeSignature.signDetached();
+                    sign(mFileUri, fos, chain, pks, DigestAlgorithms.SHA256, provider.getName(), CryptoStandard.CADES, reason, location);
 
                 } catch (KeyChainException e) {
                     e.printStackTrace();
@@ -213,15 +298,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void sign(String src, FileOutputStream os,
+    public void sign(Uri uri, FileOutputStream os,
                      Certificate[] chain,
                      ExternalSignature pk, String digestAlgorithm, String provider,
                      CryptoStandard subfilter,
                      String reason, String location)
             throws GeneralSecurityException, IOException, DocumentException {
         // Creating the reader and the stamper
-        PdfReader reader = new PdfReader(src);
-//        FileOutputStream os = new FileOutputStream(dest);
+        PdfReader reader = new PdfReader(getContentResolver().openInputStream(uri));
         PdfStamper stamper = PdfStamper.createSignature(reader, os, '\0');
         // Creating the appearance
         PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
@@ -233,7 +317,14 @@ public class MainActivity extends AppCompatActivity {
         appearance.setImageScale(-1);
         // Creating the signature
         ExternalDigest digest = new BouncyCastleDigest();
-//        ExternalSignature signature = new PrivateKeySignature(pk, digestAlgorithm, provider);
         CustomMakeSignature.signDetached(appearance, digest, pk, chain, null, null, null, 0, subfilter);
+    }
+
+    private void showProgressDialog() {
+        mProgressDialog.setIndeterminate(true);
+        mProgressDialog.setTitle("Đang ký văn bản");
+        mProgressDialog.setCancelable(false);
+        mProgressDialog.setMessage("Vui lòng đợi trong giây lát");
+        mProgressDialog.show();
     }
 }

@@ -1,24 +1,186 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:paddingBottom="8dp"
+
+    android:paddingLeft="16dp"
+    android:paddingRight="16dp"
     tools:context="vu.com.digitalsignature.MainActivity">
+
+
+    <LinearLayout
+        android:id="@+id/file_name_title_frame"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="2">
+
+        <TextView
+            android:id="@+id/tv_file_name_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Browse PDF File"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/iv_browse_file"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp"
+            android:src="@mipmap/ic_folder" />
+
+    </LinearLayout>
+
+
+    <FrameLayout
+        android:id="@+id/file_name_frame"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:padding="0dp"
+        android:background="@drawable/border"
+        android:layout_below="@+id/file_name_title_frame">
+
+        <TextView
+            android:id="@+id/tv_file_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:hint="Please choose PDF file!"
+            android:layout_marginLeft="12dp"
+            android:textColorHint="#ababab"
+            android:textStyle="italic"
+            android:textSize="14sp" />
+
+        <ImageView
+            android:id="@+id/iv_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/ic_view"
+            android:layout_gravity="right"/>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/tv_reason_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/file_name_frame"
+        android:layout_marginTop="8dp"
+        android:text="Reason"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <FrameLayout
+        android:id="@+id/reason_frame"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/tv_reason_title"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/border">
+
+        <EditText
+            android:id="@+id/et_reason"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="0dp"
+            android:hint="I'm the author."
+            android:textColorHint="#ababab"
+            android:textStyle="italic"
+            android:inputType="textNoSuggestions"
+            android:backgroundTint="@android:color/transparent"
+            android:textSize="14sp" />
+
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/tv_location_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/reason_frame"
+        android:layout_marginTop="8dp"
+        android:text="Location"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <FrameLayout
+        android:id="@+id/location_frame"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/tv_location_title"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/border">
+
+        <EditText
+            android:id="@+id/et_location"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="0dp"
+            android:hint="Ha Noi"
+            android:textColorHint="#ababab"
+            android:textStyle="italic"
+            android:inputType="textNoSuggestions"
+            android:backgroundTint="@android:color/transparent"
+            android:textSize="14sp" />
+
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/tv_signature_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/ink"
+        android:layout_marginBottom="8dp"
+        android:text="Signature Ink"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <ImageView
+        android:id="@+id/iv_clean"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_marginTop="4dp"
+        android:layout_above="@+id/ink"
+        android:layout_marginBottom="3dp"
+        android:layout_toRightOf="@+id/tv_signature_title"
+        android:src="@mipmap/ic_clean"
+        android:textColor="@color/colorPrimaryDark"/>
 
     <com.simplify.ink.InkView
         android:id="@+id/ink"
         android:layout_width="match_parent"
-        android:layout_height="300dp"
-        app:inkFlags="interpolation|responsiveWeight"/>
+        android:layout_height="170dp"
+        android:layout_above="@+id/buttonPanel"
+        android:background="@drawable/border"
+        app:inkFlags="interpolation|responsiveWeight" />
 
-    <Button
-        android:id="@+id/button"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/buttonPanel"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/ink"
-        android:layout_centerHorizontal="true"
-        android:text="Button"/>
+        android:layout_alignParentBottom="true"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:weightSum="1">
+
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/button_sign"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/colored_button"
+            android:padding="12dp"
+            android:text="SIGN"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
+
 
 </RelativeLayout>
